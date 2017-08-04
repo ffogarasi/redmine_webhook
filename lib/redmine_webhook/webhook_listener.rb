@@ -19,6 +19,15 @@ module RedmineWebhook
       return unless webhooks
       post(webhooks, journal_to_json(issue, journal, controller))
     end
+    
+    def controller_issues_bulk_edit_before_save(context = {})
+      issue = context[:issue]
+      project = issue.project
+      webhooks = Webhook.where(:project_id => project.project.id)
+      return unless webhooks
+      post(webhooks, core_issue_to_json(issue))
+    end
+    
 
     private
     def issue_to_json(issue, controller)
@@ -38,6 +47,15 @@ module RedmineWebhook
           :issue => RedmineWebhook::IssueWrapper.new(issue).to_hash,
           :journal => RedmineWebhook::JournalWrapper.new(journal).to_hash,
           :url => controller.issue_url(issue)
+        }
+      }.to_json
+    end
+    
+    def core_issue_to_json(issue)
+      {
+        :payload => {
+          :action => 'bulk_updated',
+          :issue => RedmineWebhook::IssueWrapper.new(issue).to_hash
         }
       }.to_json
     end
